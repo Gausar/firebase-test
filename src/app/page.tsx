@@ -1,102 +1,200 @@
+'use client';
 import Image from "next/image";
+import { useState, useEffect } from "react";
+
+import {auth, googleProvider, db} from "C:/Users/Gausar/Documents/test/my-app/firebase.config";
+import { createUserWithEmailAndPassword, signInWithPopup, signOut } from "firebase/auth";
+import { getDocs, collection, addDoc, deleteDoc, doc, updateDoc } from "firebase/firestore";
+
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [flowerList, setFlowerList] = useState([]);
+  const [newFlowerName, setNewFlowerName] = useState("");
+  const [newFlowerType, setNewFlowerType] = useState("");
+  const [newFlowerNumber, setNewFlowerNumber] = useState(0);
+  const [updatedName, setUpdatedName] = useState("");
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
+
+  const flowerCollectionRef = collection(db, "flowers");
+
+  const getFlowerList = async () =>{
+    try{
+      const data = await getDocs(flowerCollectionRef);
+      const filteredData:any = data.docs.map((doc) => ({
+        ...doc.data(),
+        id: doc.id,
+      }));
+      // console.log(filteredData);
+      setFlowerList(filteredData);
+    }
+    catch(err){
+      console.log(err);
+    }
+  };
+
+  useEffect(() => {
+    getFlowerList();
+  }, []);
+  
+  const addFlower = async() => {
+    try{
+      await addDoc(flowerCollectionRef, 
+                  {flowerName: newFlowerName, 
+                  flowerType: newFlowerType, 
+                  numberRemainded: newFlowerNumber,
+                  userId: auth?.currentUser?.uid,
+                });
+      getFlowerList();
+    }
+    catch(err){
+      console.log(err);
+    }
+  }
+  const deleteFlower = async(id:any) =>{
+    try{
+      const flowerDoc = doc(db, "flowers", id)
+      await deleteDoc(flowerDoc);
+      getFlowerList();
+    }catch(err){
+      console.log(err);
+    }
+  }
+  const updateFlower = async(id:any) =>{
+    try{
+      const flowerDoc = doc(db, "flowers", id);
+      updateDoc(flowerDoc, {flowerName: updatedName});
+
+      getFlowerList();
+    }catch(err){
+      console.log(err);
+    }
+  }
+
+  console.log(auth?.currentUser?.email);
+
+  const signIn = async () => {
+    try{
+      await createUserWithEmailAndPassword(auth, email, password);
+    }catch(err){
+      console.log(err);
+    }
+  }
+  const signInWithGoogle = async() => {
+    try{
+      await signInWithPopup(auth, googleProvider);
+    }catch(err){
+      console.log(err);
+    }
+  }
+  const logout = async() => {
+    try{
+      await signOut(auth);
+    }catch(err){
+      console.log(err);
+    }
+  }
+
+  
+  return (
+    <div className="min-h-screen flex flex-col">
+      <header className="bg-gray-800 px-4 py-3 sm:px-6">
+        
+        <nav className="flex space-x-4 items-center">
+          <div className="flex">
+              <a href="#" className="-m-1.5 p-1.5">
+                <span className="sr-only">Flower shop</span>
+                <img
+                  alt="logo"
+                  src="/images/logo.png"
+                  className="w-15 h-15"
+                />
+              </a>
+          </div>
+          <div className="flex w-full justify-center h-10 items-center">
+          <a href="#" className="rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white" aria-current="page">
+            Нүүр
           </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
+          <a href="#" className="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white">
+            Дэлгүүр
           </a>
+          <a href="#" className="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white">
+            Цэцгийн төрөл
+          </a>
+          <a href="#" className="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white">
+            Холбоо барих
+          </a>
+          </div>
+          <div>
+            <div className="rounded-md bg-amber-100">
+            <label htmlFor="">Email: </label>
+            <input placeholder="email..." className="m-2 p-2 rounded-md border-2 border-dashed" onChange={(e) => setEmail(e.target.value)}></input>
+            <br/>
+            <label htmlFor="">Password: </label>
+            <input placeholder="password..." className="m-2 p-2 rounded-md border-2 border-dashed" onChange={(e) => setPassword(e.target.value)} type="password"></input>
+          </div>
+          <button className="bg-blue-600 border-3 border-solid rounded-md p-2 m-2 hover:bg-blue-200 hover:text-white cursor-pointer" onClick={signIn}>Sign In</button>
+          <button className="bg-blue-600 border-3 border-solid rounded-md p-2 m-2 hover:bg-blue-200 hover:text-white cursor-pointer" onClick={signInWithGoogle}>Sign In with Google</button>
+          <button className="bg-gray-300 border-3 border-solid rounded-md p-2 m-2 hover:bg-blue-200 hover:text-white cursor-pointer" onClick={logout}>Logout</button>
+          </div>
+        </nav>
+      </header>
+      <main className="flex-grow flex flex-col items-center justify-center text-center px-4 bg-[url(/images/bg.jpg)] bg-no-repeat bg-cover backdrop-blur-sm">
+        <h1 className="text-3xl md:text-5xl font-bold mb-6 text-gray-50">Цэцгийн дэлгүүүр</h1>
+        <p className="text-gray-400 mb-8 max-w-xl">
+          Манай дэлгүүрийн байршил "Цэцэг төв"-ийн нэг давхар.
+        </p>
+        <div className="w-48 md:w-72 lg:w-96">
+          <Image
+            src="/images/flower.jpeg"
+            alt="flower"
+            width={400}
+            height={300}
+            className="rounded-xl object-cover mb-10"
+            priority
+          />
+        </div>
+        <div>
+          {flowerList.map((flower) =>(
+            <div className="font-bold">
+              <h1 className="text-4xl text-gray-50">{flower.flowerName}</h1>
+              <p>Цэцгийн төрөл : {flower.flowerType}</p>
+              <p className="text-purple-600">Үлдсэн тоо, ширхэг: {flower.numberRemainded}</p>
+              <button className="bg-red-100 border-3 border-solid rounded-md p-2 m-2 hover:bg-red-300 hover:text-white cursor-pointer" onClick={() => deleteFlower(flower.id)}>Устгах</button>
+              <br/>
+              <input placeholder="Цэцгийн нэр өөрчлөх..." className="m-2 p-2 rounded-md border-2 border-dashed" onChange={(e) => setUpdatedName(e.target.value)}></input>
+              <br/>
+              <button className="bg-blue-100 border-3 border-solid rounded-md p-2 m-2 hover:bg-green-300 hover:text-white cursor-pointer" onClick={() => updateFlower(flower.id)}>Өөрчлөх</button>
+
+            </div>
+          ))}
+        </div>
+        <div>
+        <div className="rounded-md bg-amber-100">
+            <label htmlFor="">Цэцгийн нэр: </label>
+            <input placeholder="Цэцгийн нэр..." className="m-2 p-2 rounded-md border-2 border-dashed" onChange={(e) => setNewFlowerName(e.target.value)}></input>
+            <br/>
+            <label htmlFor="">Төрөл: </label>
+            <input placeholder="Цэцгийн төрөл..." className="m-2 p-2 rounded-md border-2 border-dashed" onChange={(e) => setNewFlowerType(e.target.value)}></input>
+            <br/>
+            <label>Тоо, ширхэг :</label>
+            <input type="number" className="m-2 p-2 rounded-md border-2 border-dashed" placeholder="Зөвхөн тоо оруулна..." onChange={(e) => setNewFlowerNumber(e.target.value)} />
+          </div>
+          <button className="bg-blue-600 border-3 border-solid rounded-md p-2 m-2 hover:bg-blue-200 hover:text-white cursor-pointer" onClick={addFlower}>Нэмэх</button>
+
         </div>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+
+      <footer className="bg-gray-800 text-gray-300 text-center py-4">
+        <p className="text-sm">
+          &copy; {new Date().getFullYear()} Gausar Amangyeldi.
+        </p>
+        <div className="mt-2 space-x-4">
+          <a href="#" className="hover:text-white text-sm">Facebook</a>
+          <a href="#" className="hover:text-white text-sm">Instagram</a>
+        </div>
       </footer>
     </div>
   );
